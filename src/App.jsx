@@ -5,6 +5,8 @@ import { useAuth } from './hooks/useAuth';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
 import { useDocStore } from './store/documentStore';
 import { useUIStore } from './store/uiStore';
+import { getRedirectResult } from 'firebase/auth';
+import { auth } from './firebase/config';
 import AuthScreen from './components/Auth/AuthScreen';
 import Header from './components/Header/Header';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -16,6 +18,13 @@ export default function App() {
 
   // Bootstrap Firestore sync — subscribes on sign-in, tears down on sign-out
   useFirestoreSync(user);
+  
+  // Inside App(), add this:
+  useEffect(() => {
+    getRedirectResult(auth).catch((err) => {
+      console.error('Redirect error:', err);
+    });
+  }, []);
 
   // Global keyboard shortcuts
   useEffect(() => {
