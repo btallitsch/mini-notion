@@ -1,22 +1,24 @@
-# 🗒️ Mini Notion — Collaborative Document Editor
+# 🗒️ Mini Notion — Collaborative Document Editor with Firebase Cloud Sync
 
-A feature-rich, Notion-inspired document editor built with React 18, demonstrating advanced frontend patterns including complex state modeling, optimistic updates, conflict resolution, and scalable component architecture.
+A feature-rich, Notion-inspired document editor built with React 18, Zustand, and Firebase — featuring real-time cloud sync, offline support, Google authentication, and full version history stored in Firestore.
 
-See it in action here: https://mini-notion-nine.vercel.app/
 ---
 
 ## ✨ Features
 
 | Feature | Description |
 |---|---|
-| 📄 Nested Documents | Create hierarchical pages with unlimited nesting depth |
-| 🔄 Drag & Drop Reorder | Reorder pages in the sidebar via HTML5 drag-and-drop |
-| 💾 Autosave | Debounced persistence (800ms) with optimistic updates |
-| ⏰ Version History | Up to 25 restorable snapshots per document |
-| 👁️ Role System | Toggle between **Editor** and **Read-only** modes |
-| 📝 Markdown Support | Full Markdown preview with live editing toolbar |
-| 🎨 Emoji Icons | Per-page emoji picker for visual organization |
-| ⌨️ Keyboard Shortcuts | `Ctrl+B` sidebar toggle, `Ctrl+N` new page |
+| ☁️ Firebase Cloud Sync | Real-time Firestore sync — changes appear instantly across all devices |
+| 🔐 Authentication | Google OAuth + Email/Password sign-in via Firebase Auth |
+| 📴 Offline Support | IndexedDB persistence — reads and writes work fully offline |
+| 📄 Nested Documents | Hierarchical pages with unlimited nesting |
+| 🔄 Drag & Drop Reorder | Reorder pages via HTML5 drag-and-drop, persisted to Firestore |
+| 💾 Autosave | Debounced 800ms autosave with optimistic updates |
+| ⏰ Version History | Up to 25 restorable Firestore snapshots per document |
+| 👁️ Role System | Editor / Read-only toggle |
+| 📝 Markdown | Full Markdown editing + live preview |
+| 🎨 Emoji Icons | Per-page emoji picker |
+| ⌨️ Keyboard Shortcuts | `Ctrl+B` sidebar, `Ctrl+N` new page |
 
 ---
 
@@ -26,9 +28,10 @@ See it in action here: https://mini-notion-nine.vercel.app/
 |---|---|
 | UI Framework | React 18 (Hooks) |
 | State Management | Zustand + Immer |
-| Drag & Drop | `@dnd-kit/core` + `@dnd-kit/sortable` |
-| Persistence | Debounced autosave (upgradeable to any backend) |
-| Styling | Inline styles (Catppuccin Mocha theme) |
+| Cloud Database | Firebase Firestore |
+| Authentication | Firebase Auth (Google + Email/Password) |
+| Offline Persistence | Firestore IndexedDB cache |
+| Drag & Drop | HTML5 native (upgradeable to @dnd-kit) |
 | Build Tool | Vite |
 
 ---
@@ -37,178 +40,181 @@ See it in action here: https://mini-notion-nine.vercel.app/
 
 ```
 mini-notion/
+├── .env.example                          # Firebase env vars template
 ├── index.html
 ├── package.json
 ├── vite.config.js
 ├── tailwind.config.js
 ├── postcss.config.js
 └── src/
-    ├── main.jsx                          # App entry point
-    ├── App.jsx                           # Root layout + keyboard shortcuts
-    ├── index.css                         # Global styles + scrollbar + animations
+    ├── main.jsx                          # React entry point
+    ├── App.jsx                           # Root: auth gate + sync bootstrap
+    ├── index.css                         # Global styles
+    │
+    ├── firebase/
+    │   ├── config.js                     # Firebase init + IndexedDB persistence
+    │   ├── auth.js                       # Auth helpers (Google, email, sign-out)
+    │   └── firestore.js                  # All Firestore CRUD + onSnapshot listeners
     │
     ├── store/
-    │   ├── documentStore.js              # Zustand: document CRUD, versions, reorder
-    │   └── uiStore.js                    # Zustand: role, sidebar, selection state
+    │   ├── documentStore.js              # Zustand: docs, versions, Firebase writes
+    │   └── uiStore.js                    # Zustand: role, sidebar, selection
     │
     ├── hooks/
-    │   ├── useAutosave.js                # Debounced persistence with optimistic update
-    │   └── useDebounce.js                # Generic reusable debounce hook
+    │   ├── useAuth.js                    # Firebase auth state observer
+    │   ├── useFirestoreSync.js           # Bootstrap + real-time subscription
+    │   ├── useAutosave.js                # Debounced Firestore persistence
+    │   └── useDebounce.js                # Generic debounce hook
     │
     ├── utils/
-    │   ├── immutable.js                  # Immutable tree helpers (Immer patterns)
-    │   └── dateUtils.js                  # Timestamp formatting utilities
+    │   ├── immutable.js                  # Tree manipulation helpers
+    │   └── dateUtils.js                  # Timestamp formatting
     │
     └── components/
-        ├── Header/
-        │   └── Header.jsx                # Top bar with sidebar toggle + role switcher
-        │
-        ├── RoleToggle/
-        │   └── RoleToggle.jsx            # Editor / Read-only segmented control
-        │
-        ├── EmojiPicker/
-        │   └── EmojiPicker.jsx           # Floating emoji grid for page icons
-        │
+        ├── Auth/AuthScreen.jsx           # Sign-in / Sign-up / Reset UI
+        ├── Header/Header.jsx             # Top bar: sync status + user menu
+        ├── RoleToggle/RoleToggle.jsx     # Editor / Read-only control
+        ├── EmojiPicker/EmojiPicker.jsx   # Floating emoji selector
         ├── Sidebar/
-        │   ├── Sidebar.jsx               # Sidebar shell + New Page button
-        │   ├── DocumentTree.jsx          # Recursive root-level tree renderer
-        │   └── DocumentItem.jsx          # Single draggable, collapsible tree node
-        │
+        │   ├── Sidebar.jsx               # Sidebar shell
+        │   └── DocumentItem.jsx          # Draggable tree node
         ├── Editor/
-        │   ├── Editor.jsx                # Main editor shell + autosave orchestration
+        │   ├── Editor.jsx                # Main editor + autosave orchestration
         │   ├── EditorToolbar.jsx         # Markdown formatting toolbar
         │   └── MarkdownView.jsx          # Read-only Markdown renderer
-        │
         └── VersionHistory/
-            └── VersionPanel.jsx          # Snapshot list with restore functionality
+            └── VersionPanel.jsx          # Version list + Firestore restore
 ```
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Node.js 18+
-- npm 9+
-
-### Installation
+### 1. Clone & Install
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/your-username/mini-notion.git
 cd mini-notion
-
-# 2. Install dependencies
 npm install
-
-# 3. Start the development server
-npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+### 2. Create a Firebase Project
 
-### Build for Production
+1. Go to [https://console.firebase.google.com](https://console.firebase.google.com)
+2. Click **Add project** and follow the prompts
+3. From the project dashboard, click **Add app → Web**
+4. Register the app and copy the `firebaseConfig` object
+
+### 3. Enable Firebase Services
+
+In the Firebase Console:
+
+**Authentication:**
+- Go to **Build → Authentication → Sign-in method**
+- Enable **Google**
+- Enable **Email/Password**
+
+**Firestore:**
+- Go to **Build → Firestore Database → Create database**
+- Start in **production mode**
+- Paste these security rules under the **Rules** tab:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /workspaces/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+### 4. Configure Environment Variables
 
 ```bash
-npm run build
-npm run preview
+cp .env.example .env.local
+```
+
+Open `.env.local` and fill in your Firebase config values:
+
+```env
+VITE_FIREBASE_API_KEY=AIza...
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
+VITE_FIREBASE_APP_ID=1:123:web:abc
+```
+
+### 5. Run
+
+```bash
+npm run dev
+# → http://localhost:5173
 ```
 
 ---
 
 ## 🏗️ Architecture Deep Dive
 
-### State Management — Zustand + Immer
+### Firebase Data Model
 
-All application state is split into two Zustand stores:
-
-**`documentStore.js`** owns all document data:
-- Flat map `{ [id]: Document }` for O(1) lookups
-- `children: string[]` arrays for tree structure
-- Version snapshots array (max 25 per document)
-- Saving status per document (`null | 'saving' | 'saved'`)
-
-**`uiStore.js`** owns all UI state:
-- Active document selection
-- Role (`editor` | `readonly`)
-- Sidebar open/close
-- Version history panel open/close
-- Per-document expand/collapse state
-
-```js
-// Example: Immer-based immutable update
-updateDocument: (id, changes) =>
-  set(produce((state) => {
-    Object.assign(state.documents[id], changes, { updatedAt: Date.now() });
-  })),
 ```
+workspaces/
+  {userId}/
+    meta/
+      workspace          ← { rootDocumentIds: string[] }
+    documents/
+      {docId}            ← Document fields + content
+    versions/
+      {docId}/
+        snapshots/
+          {snapId}       ← Version snapshot
+```
+
+Each user gets a fully isolated workspace under `workspaces/{uid}`. The Firestore security rules enforce that only the authenticated user can read or write their own workspace.
+
+### Real-Time Sync Flow
+
+```
+onSnapshot(documents) → applyRemoteChanges()
+                          ↓
+               Conflict check: skip if local.updatedAt > remote.updatedAt
+                          ↓
+               Zustand store updated → React re-renders
+```
+
+Remote changes from other devices arrive via `onSnapshot` listeners and are merged into the Zustand store. If the user is currently editing a document, their unsaved local version is preserved (last-write-wins protection).
 
 ### Optimistic Updates
 
-Changes are reflected in the store **immediately** on each keystroke. The debounced save timer fires 800ms after the last edit, capturing a version snapshot. This means:
-
-1. UI always shows the latest state — no loading flicker
-2. Version history only snapshots when the user pauses
-3. Duplicate snapshots (same title + content) are skipped
-
 ```
-Keystroke → setState (optimistic) → [800ms pause] → saveVersion()
-```
-
-### Debounced Autosave
-
-```js
-// hooks/useAutosave.js
-const triggerSave = useCallback((title, content) => {
-  clearTimeout(timerRef.current);
-  setSavingStatus(selectedId, 'saving');
-  updateDocument(selectedId, { title, content }); // ← optimistic
-  timerRef.current = setTimeout(() => {
-    saveVersion(selectedId);                       // ← snapshot
-    setSavingStatus(selectedId, 'saved');
-  }, 800);
-}, [selectedId]);
+User types
+  → Local state updates instantly  (no lag)
+  → Zustand store updated          (optimistic)
+  → [800ms silence]
+  → Firestore write                (persist)
+  → Version snapshot saved
+  → "✓ Saved to cloud" indicator
 ```
 
-### Immutable Tree Manipulation
+The UI never waits for Firestore — all changes are reflected immediately. If the Firestore write fails, the error is surfaced and the local state is preserved.
 
-Documents are stored in a **flat normalized map** rather than a nested tree. This makes reads O(1) and mutations safe with Immer:
+### Offline Support
 
-```js
-// utils/immutable.js
-export const collectDescendants = (tree, id) => {
-  const result = [];
-  const walk = (nodeId) => {
-    result.push(nodeId);
-    (tree[nodeId]?.children || []).forEach(walk);
-  };
-  walk(id);
-  return result;
-};
-```
+Firestore's `enableIndexedDbPersistence()` caches all reads locally. When offline:
+- All reads are served from the IndexedDB cache
+- Writes are queued locally
+- Everything syncs automatically when connectivity is restored
 
-When deleting a document, all descendants are collected first, then removed from the flat map in a single Immer `produce` call.
+This means the app is **fully functional offline** with no additional code.
 
-### Drag-and-Drop Reorder
+### Conflict Resolution
 
-Each `DocumentItem` is a native HTML5 drag source and drop target. On drop, the sibling array is reconstructed immutably and written back to the store:
+Currently uses **last-write-wins with local priority** — if the local copy is newer than the incoming remote change, the remote update is skipped. This prevents remote syncs from clobbering in-progress edits.
 
-```js
-const reordered = siblings.filter(id => id !== dragged);
-const targetIdx = reordered.indexOf(dropTargetId);
-reordered.splice(targetIdx + 1, 0, dragged);
-reorderDocuments(parentId, reordered);
-```
-
-> **Production upgrade:** Replace with `@dnd-kit/sortable` for accessible, animated drag-and-drop with keyboard support.
-
-### Role-Based Access Control
-
-A single `role` atom in `uiStore` gates all write paths:
-- Toolbar hidden in `readonly` mode
-- Title input replaced with static text
-- Add / Delete buttons unmounted
-- Drag-and-drop disabled (`draggable={role === 'editor'}`)
+For true multi-user concurrent editing, upgrade to **Yjs + y-firestore** (CRDTs).
 
 ---
 
@@ -216,27 +222,53 @@ A single `role` atom in `uiStore` gates all write paths:
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl + B` / `⌘ + B` | Toggle sidebar |
-| `Ctrl + N` / `⌘ + N` | Create new page |
-| Edits auto-save after 800ms of inactivity | |
+| `Ctrl/⌘ + B` | Toggle sidebar |
+| `Ctrl/⌘ + N` | Create new page |
+| Edits autosave after 800ms of inactivity | |
 
 ---
 
-## 🔮 Roadmap / Possible Extensions
+## 🔧 Local Emulator (Optional)
 
-- [ ] **Backend persistence** — replace `setTimeout` in `useAutosave` with a real API call (REST or WebSocket)
-- [ ] **Real-time collaboration** — add CRDT conflict resolution (e.g., Yjs or Automerge)
-- [ ] **Rich text editor** — swap `<textarea>` for TipTap or Slate.js
-- [ ] **Search** — full-text search across all documents
+For development without hitting production Firebase:
+
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login and init
+firebase login
+firebase init emulators  # select Auth + Firestore
+
+# Start emulators
+firebase emulators:start
+```
+
+Then uncomment the emulator lines in `src/firebase/config.js`:
+
+```js
+if (import.meta.env.DEV) {
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+}
+```
+
+---
+
+## 🔮 Roadmap
+
+- [ ] **Real-time collaboration** — Yjs + y-firestore for CRDT-based concurrent editing
+- [ ] **Rich text editor** — TipTap or Slate.js to replace `<textarea>`
+- [ ] **Workspace sharing** — invite users with `editor` or `readonly` roles
+- [ ] **Full-text search** — Algolia or Typesense via Firestore write triggers
 - [ ] **Export** — download pages as Markdown or PDF
-- [ ] **Auth** — multi-user support with per-user workspaces
-- [ ] **Tests** — Vitest unit tests for store actions + React Testing Library for components
+- [ ] **Tests** — Vitest for store actions, React Testing Library for components
 
 ---
 
 ## 🎨 Design System
 
-The UI uses the [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) color palette:
+Built with the [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) palette.
 
 | Token | Hex | Usage |
 |---|---|---|
@@ -244,7 +276,6 @@ The UI uses the [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) col
 | Mantle | `#181825` | Sidebar, toolbar |
 | Crust | `#11111b` | Header bar |
 | Surface 0 | `#313244` | Buttons, inputs |
-| Overlay 0 | `#6c7086` | Muted text, icons |
 | Text | `#cdd6f4` | Primary text |
 | Mauve | `#cba6f7` | Accent, selections |
 | Green | `#a6e3a1` | Save confirmation |
@@ -258,4 +289,4 @@ MIT — free to use, modify, and distribute.
 
 ---
 
-<p align="center">Built with React 18 · Zustand · Immer · Vite</p>
+<p align="center">Built with React 18 · Zustand · Firebase · Vite</p>

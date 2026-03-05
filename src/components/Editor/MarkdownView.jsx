@@ -1,3 +1,5 @@
+// src/components/Editor/MarkdownView.jsx
+
 import { useMemo } from 'react';
 
 export default function MarkdownView({ content }) {
@@ -30,7 +32,7 @@ export default function MarkdownView({ content }) {
         .md strong{color:#f5c2e7} .md em{color:#f9e2af}
         .md code{background:#313244;color:#a6e3a1;padding:2px 7px;border-radius:5px;font-size:.88em;font-family:monospace}
         .md hr{border:none;border-top:1px solid #45475a;margin:1.5em 0}
-        .md blockquote{border-left:3px solid #cba6f7;margin:0;padding:.4em 1em;background:#181825;border-radius:0 8px 8px 0;color:#a6adc8}
+        .md blockquote{border-left:3px solid #cba6f7;margin:0;padding:.5em 1em;background:#181825;border-radius:0 8px 8px 0;color:#a6adc8}
         .md ul{list-style:none;padding:0;margin:.4em 0}
         .md li{padding:2px 0;display:flex;gap:8px;align-items:baseline;color:#cdd6f4}
         .md li::before{content:"•";color:#cba6f7;flex-shrink:0}

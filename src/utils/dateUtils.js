@@ -1,3 +1,5 @@
+// src/utils/dateUtils.js
+
 export const formatDate = (ts) => {
   const diff = Date.now() - ts;
   if (diff < 60_000) return 'Just now';

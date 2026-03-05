@@ -1,14 +1,14 @@
+// src/components/Sidebar/DocumentItem.jsx
+
 import { useState } from 'react';
 import { useDocStore } from '../../store/documentStore';
 import { useUIStore } from '../../store/uiStore';
 
-export default function DocumentItem({ docId, depth = 0 }) {
+export default function DocumentItem({ docId, depth = 0, uid }) {
   const doc = useDocStore((s) => s.documents[docId]);
   const selectedId = useUIStore((s) => s.selectedDocId);
   const expanded = useUIStore((s) => s.expanded[docId]);
   const role = useUIStore((s) => s.role);
-  const { addDocument, reorderDocuments } = useDocStore.getState();
-  const { selectDocument, toggleExpand, expand } = useUIStore.getState();
 
   const [hovered, setHovered] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -28,14 +28,16 @@ export default function DocumentItem({ docId, depth = 0 }) {
     const dragged = e.dataTransfer.getData('docId');
     const draggedParent = e.dataTransfer.getData('parentId') || null;
     if (dragged === docId) return;
+
     const state = useDocStore.getState();
     const siblings = draggedParent
       ? state.documents[draggedParent]?.children || []
       : state.rootDocumentIds;
+
     const reordered = siblings.filter((id) => id !== dragged);
     const targetIdx = reordered.indexOf(docId);
     reordered.splice(targetIdx + 1, 0, dragged);
-    reorderDocuments(draggedParent, reordered);
+    state.reorderDocuments(uid, draggedParent, reordered);
   };
 
   return (
@@ -50,8 +52,8 @@ export default function DocumentItem({ docId, depth = 0 }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={() => {
-          selectDocument(docId);
-          if (doc.children?.length) toggleExpand(docId);
+          useUIStore.getState().selectDocument(docId);
+          if (doc.children?.length) useUIStore.getState().toggleExpand(docId);
         }}
         style={{
           display: 'flex', alignItems: 'center', gap: 5,
@@ -66,25 +68,23 @@ export default function DocumentItem({ docId, depth = 0 }) {
           {doc.children?.length > 0 ? (expanded ? '▼' : '▶') : ''}
         </span>
         <span style={{ fontSize: 15 }}>{doc.emoji || '📄'}</span>
-        <span style={{ flex: 1, fontSize: 13, color: isSelected ? '#cdd6f4' : '#a6adc8',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          fontWeight: isSelected ? 600 : 400 }}>
+        <span style={{ flex: 1, fontSize: 13, color: isSelected ? '#cdd6f4' : '#a6adc8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: isSelected ? 600 : 400 }}>
           {doc.title || 'Untitled'}
         </span>
         {hovered && role === 'editor' && (
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              const id = addDocument(docId);
-              selectDocument(id);
-              expand(docId);
+              const id = await useDocStore.getState().addDocument(uid, docId);
+              useUIStore.getState().selectDocument(id);
+              useUIStore.getState().expand(docId);
             }}
             title="Add sub-page"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6c7086', fontSize: 16, padding: '0 2px', lineHeight: 1 }}>+</button>
         )}
       </div>
       {expanded && doc.children?.map((cid) => (
-        <DocumentItem key={cid} docId={cid} depth={depth + 1} />
+        <DocumentItem key={cid} docId={cid} depth={depth + 1} uid={uid} />
       ))}
     </div>
   );

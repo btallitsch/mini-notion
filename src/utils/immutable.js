@@ -1,25 +1,5 @@
-// Immutable tree manipulation helpers (mirrors Immer produce patterns)
-
-export const updateNode = (tree, id, changes) => ({
-  ...tree,
-  [id]: { ...tree[id], ...changes, updatedAt: Date.now() },
-});
-
-export const addChildToNode = (tree, parentId, childId) => ({
-  ...tree,
-  [parentId]: {
-    ...tree[parentId],
-    children: [...(tree[parentId]?.children || []), childId],
-  },
-});
-
-export const removeChildFromNode = (tree, parentId, childId) => ({
-  ...tree,
-  [parentId]: {
-    ...tree[parentId],
-    children: (tree[parentId]?.children || []).filter(id => id !== childId),
-  },
-});
+// src/utils/immutable.js
+// Immutable tree helpers — mirrors Immer produce patterns.
 
 export const collectDescendants = (tree, id) => {
   const result = [];
@@ -31,9 +11,9 @@ export const collectDescendants = (tree, id) => {
   return result;
 };
 
-export const reorderList = (list, from, to) => {
+export const reorderList = (list, fromIndex, toIndex) => {
   const next = [...list];
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
   return next;
 };
