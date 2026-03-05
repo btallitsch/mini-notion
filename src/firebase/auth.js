@@ -20,7 +20,8 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // ─── Sign in / Sign up ────────────────────────────────────────────────────────
 
-export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+// export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const signInWithGoogle = () => signInWithRedirect(auth, googleProvider);
 
 export const signInWithEmail = (email, password) =>
   signInWithEmailAndPassword(auth, email, password);
